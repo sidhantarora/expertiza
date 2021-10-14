@@ -16,6 +16,7 @@ class Team < ActiveRecord::Base
   def self.create_teams(session, params)
     parent = Object.const_get(session[:team_type]).find(params[:id])
     Team.randomize_all_by_parent(parent, session[:team_type], params[:team_size].to_i)
+    return parent
   end
 
   # Get the participants of the given team

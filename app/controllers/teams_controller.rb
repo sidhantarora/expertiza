@@ -10,7 +10,7 @@ class TeamsController < ApplicationController
   # This function is used to create teams with random names.
   # Instructors can call by clicking "Create teams" icon anc then click "Create teams" at the bottom.
   def random_teams
-    Team.create_teams(session,params)
+    parent = Team.create_teams(session,params)
     ExpertizaLogger.info LoggerMessage.new(controller_name, '', 'Random teams have been successfully created', request)
     undo_link("Random teams have been successfully created.")
     redirect_to action: 'list', id: parent.id
@@ -32,36 +32,43 @@ class TeamsController < ApplicationController
     @parent = Object.const_get(session[:team_type] ||= 'Assignment').find(params[:id])
   end
 
-  # called when a instructor tries to create an empty namually.
+  # called when a instructor tries to create an empty manually.
   def create
-    parent = Object.const_get(session[:team_type]).find(params[:id])
     begin
-      Team.check_for_existing(parent, params[:team][:name], session[:team_type])
+      parent = get_parent_and_check_if_exists(params[:id])
       @team = Object.const_get(session[:team_type] + 'Team').create(name: params[:team][:name],
                                                                     parent_id: parent.id)
       TeamNode.create(parent_id: parent.id, node_object_id: @team.id)
       undo_link("The team \"#{@team.name}\" has been successfully created.")
       redirect_to action: 'list', id: parent.id
     rescue TeamExistsError
-      flash[:error] = $ERROR_INFO
-      redirect_to action: 'new', id: parent.id
+      catch_update_or_create_error('new', parent.id)
     end
   end
 
   def update
-    @team = Team.find(params[:id])
-    parent = Object.const_get(session[:team_type]).find(@team.parent_id)
     begin
-      Team.check_for_existing(parent, params[:team][:name], session[:team_type])
+      @team = Team.find(params[:id])
+      parent = get_parent_and_check_if_exists(@team.parent_id)
       @team.name = params[:team][:name]
       @team.save
       flash[:success] = "The team \"#{@team.name}\" has been successfully updated."
       undo_link("")
       redirect_to action: 'list', id: parent.id
     rescue TeamExistsError
-      flash[:error] = $ERROR_INFO
-      redirect_to action: 'edit', id: @team.id
+      catch_update_or_create_error('edit',@team.id)
     end
+  end
+
+  def get_parent_and_check_if_exists(parent_id)
+    parent = Object.const_get(session[:team_type]).find(parent_id)
+    Team.check_for_existing(parent, params[:team][:name], session[:team_type])
+    return parent
+  end
+
+  def catch_update_or_create_error(action ,id)
+    flash[:error] = $ERROR_INFO
+    redirect_to action: action, id: id
   end
 
   def edit

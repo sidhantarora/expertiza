@@ -10,7 +10,14 @@ class Team < ActiveRecord::Base
   scope :find_team_for_assignment_and_user, lambda {|assignment_id, user_id|
     joins(:teams_users).where("teams.parent_id = ? AND teams_users.user_id = ?", assignment_id, user_id)
   }
-  
+
+  # This function is used to create teams with random names.
+  # Instructors can call by clicking "Create temas" icon anc then click "Create teams" at the bottom.
+  def self.create_teams(session, params)
+    parent = Object.const_get(session[:team_type]).find(params[:id])
+    Team.randomize_all_by_parent(parent, session[:team_type], params[:team_size].to_i)
+  end
+
   # Get the participants of the given team
   def participants
     users.where(parent_id: parent_id || current_user_id).flat_map(&:participants)

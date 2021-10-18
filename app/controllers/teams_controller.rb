@@ -47,8 +47,8 @@ class TeamsController < ApplicationController
   end
 
   def update
+    @team = Team.find(params[:id])
     begin
-      @team = Team.find(params[:id])
       parent = get_parent_and_check_if_exists(@team.parent_id)
       @team.name = params[:team][:name]
       @team.save
@@ -83,7 +83,7 @@ class TeamsController < ApplicationController
       @signed_up_team = SignedUpTeam.where(team_id: @team.id)
       @teams_users = TeamsUser.where(team_id: @team.id)
 
-      if @signed_up_team == 1 && !@signUps.first.is_waitlisted # this team hold a topic
+      if @signed_up_team == 1 && !@signups.first.is_waitlisted # this team hold a topic
         # if there is another team in waitlist, make this team hold this topic
         topic_id = @signed_up_team.first.topic_id
         next_wait_listed_team = SignedUpTeam.where(topic_id: topic_id, is_waitlisted: true).first
@@ -107,9 +107,7 @@ class TeamsController < ApplicationController
       course = Course.find(assignment.course_id)
       teams = course.get_teams
       unless teams.empty?
-        teams.each do |team|
-          team.copy(assignment.id)
-        end
+        Team.copyAssignment(teams, assignment)
       else
         flash[:note] = "No teams were found when trying to inherit."
       end

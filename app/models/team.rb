@@ -291,7 +291,13 @@ class Team < ActiveRecord::Base
     end
     return team
   end
-  
+
+  def self.copyAssignment(teams, assignment)
+    teams.each do |team|
+      team.copy(assignment.id)
+    end
+  end
+
   private
 
   # Removes the specified user from any team of the specified assignment
